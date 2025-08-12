@@ -1,15 +1,17 @@
 # PulseTrader - Real-Time Trading Analytics Platform
 
-A real-time financial data analytics platform built with Python, FastAPI, PostgreSQL, and WebSockets.
+A serverless financial data analytics platform for real-time market data ingestion, analysis, and algorithmic trading signal generation.
+Built with AWS Lambda, API Gateway WebSockets, PostgreSQL (RDS), Redis (ElastiCache), and FastAPI for sub-second latency analytics.
 
 ## Tech Stack
 
-- **Backend**: Python, FastAPI
-- **Database**: PostgreSQL (time-series optimized)
-- **Real-time**: WebSockets for live price streaming
-- **Caching**: Redis
-- **Deployment**: Docker, AWS RDS
+- **Backend**: Python, FastAPI, AWS Lambda (serverless functions)
+- **Database**: AWS RDS PostgreSQL (time-series optimized)
+- **Real-time**: API Gateway WebSockets for live price streaming
+- **Message Queue**: AWS SQS for event-driven processing
+- **Caching**: AWS ElastiCache (Redis)
 - **Data Source**: Alpha Vantage API
+- **Deployment**: AWS Cloud (serverless architecture), Docker for local testing
 
 ## Setup
 
@@ -40,6 +42,7 @@ Create `.env` file:
 ```
 DATABASE_URL=postgresql://trader:your_password@localhost:5432/trading_db
 ALPHA_VANTAGE_API_KEY=your_api_key_here
+AWS_REGION=us-east-2
 ```
 
 6. **Run the application**
@@ -47,28 +50,40 @@ ALPHA_VANTAGE_API_KEY=your_api_key_here
 uvicorn app.main:app --reload
 ```
 
-## Features (In Development)
+## Core Features
 
-- [ ] Real-time stock price ingestion
-- [ ] WebSocket streaming for live updates
-- [ ] Complex SQL analytics with window functions
-- [ ] Technical indicator calculations
-- [ ] Portfolio backtesting
-- [ ] Redis caching for performance
-- [ ] AWS deployment
+- [ ] Real-time Stock Price Ingestion (via AWS Lambda + Alpha Vantage API)
+- [ ] WebSocket Streaming for sub-second market updates
+- [ ] Optimized PostgreSQL Time-Series Storage for historical data
+- [ ] Analytical SQL Queries with window functions & CTEs
+- [ ] Technical Indicator Calculations (EMA, RSI, Bollinger Bands, etc.)
+- [ ] Portfolio Backtesting Engine with multi-timeframe support
+- [ ] AWS ElastiCache Redis Caching for low-latency queries
+- [ ] Fully Serverless Event-Driven Microservices Architecture
 
 ## API Endpoints
 
-- `GET /health` - Health check
+REST API (AWS Lambda via API Gateway)
+- `POST /load-stock` - Health check
 - `GET /stocks` - List all tracked stocks
-- `POST /stocks` - Add new stock to tracking
-- `GET /stocks/{symbol}/prices` - Get price history
-- `WS /ws/prices` - Live price updates
+- `GET /prices` - Get recent price data
+
+WebSocket (Real-time feed):
+- Connect to wss://<api-gateway-url>
+- Send: {"action": "subscribe", "symbol": "AAPL"}
+- Receive: {"symbol": "AAPL", "price": 215.32, "timestamp": "2025-08-12T14:35:00Z"}
+
+## Architecture Overview
+
+- **Data Ingestion**: Lambda functions fetch data from Alpha Vantage and push updates into RDS + Redis
+- **Real-time Feed**: API Gateway WebSockets broadcast updates to connected clients
+- **Data Processing**: Event-driven pipelines (via SQS) trigger analytical calculations
+- **Storage**: Optimized PostgreSQL schema with indexed time-series tables
+- **Caching**: Redis stores recent data for millisecond retrieval
 
 ## Project Goals
 
-Learning advanced backend development concepts including:
-- Time-series database optimization
-- Real-time data pipelines
-- Cloud deployment architecture
-- Production-ready API design
+- Demonstrate AWS serverless architecture for real-time financial operations
+- Showcase event-driven microsfervices for low latency analytics
+- Build production-style cloud backend
+- Practice database optimization for time-series workloads
