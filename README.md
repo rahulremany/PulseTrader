@@ -1,89 +1,98 @@
-# PulseTrader - Real-Time Trading Analytics Platform
+# PulseTrader
 
-A serverless financial data analytics platform for real-time market data ingestion, analysis, and algorithmic trading signal generation.
-Built with AWS Lambda, API Gateway WebSockets, PostgreSQL (RDS), Redis (ElastiCache), and FastAPI for sub-second latency analytics.
+**PulseTrader** is a real-time stock price broadcasting platform built entirely on AWS serverless infrastructure.  
+It demonstrates scalable WebSocket communication, event-driven data processing, and DynamoDB-backed subscriptions — all without managing servers.
 
-## Tech Stack
+---
 
-- **Backend**: Python, FastAPI, AWS Lambda (serverless functions)
-- **Database**: AWS RDS PostgreSQL (time-series optimized)
-- **Real-time**: API Gateway WebSockets for live price streaming
-- **Message Queue**: AWS SQS for event-driven processing
-- **Caching**: AWS ElastiCache (Redis)
-- **Data Source**: Alpha Vantage API
-- **Deployment**: AWS Cloud (serverless architecture), Docker for local testing
+## 🚀 Features
+- **Live WebSocket Connections** — Clients connect via API Gateway WebSocket API for real-time updates.
+- **Symbol Subscriptions** — Users can subscribe to one or more stock tickers and receive instant price changes.
+- **Price Broadcasting** — Incoming price updates are broadcast to all subscribed clients via AWS Lambda.
+- **Fully Serverless** — Built with AWS Lambda, API Gateway, DynamoDB, and SQS for maximum scalability.
+- **On-Demand Pricing** — Cost-optimized using AWS on-demand services, no always-on compute required.
 
-## Setup
+---
 
-1. **Clone and navigate to project**
+## 🛠 Architecture
+
+1. **API Gateway (WebSocket API)**  
+   - Handles client connections (`$connect`, `$disconnect`) and routes subscription actions to Lambda.
+
+2. **Lambda Functions**  
+   - **Connection Handler** — Registers new WebSocket clients and manages subscriptions.  
+   - **Disconnection Handler** — Cleans up stale connections.  
+   - **Broadcast Handler** — Reads price updates from SQS and pushes them to subscribers.  
+   - **Price Update Ingestor** — Receives new price ticks and pushes them into the broadcast pipeline.
+
+3. **DynamoDB**  
+   - Stores active subscriptions keyed by `symbol` and `connectionId`.
+
+4. **SQS**  
+   - Decouples price ingestion from broadcasting to ensure reliability under load.
+
+---
+
+## 📂 Repository Structure
+```
+.
+├── lambdas/
+│   ├── connection_handler.py
+│   ├── disconnection_handler.py
+│   ├── subscribe_handler.py
+│   ├── broadcast_handler.py
+├── infrastructure/
+│   ├── template.yaml          # AWS SAM / CloudFormation template
+│   ├── policies/              # IAM role policies
+├── requirements.txt
+├── README.md
+```
+
+---
+
+## ⚙️ Requirements
+- Python 3.9+
+- AWS CLI configured with permissions for:
+  - API Gateway WebSocket API
+  - Lambda
+  - DynamoDB
+  - SQS
+- AWS SAM CLI (for local testing)
+
+---
+
+## 📦 Installation & Deployment
+
+**Deploy with AWS SAM:**
 ```bash
-git clone <your-repo-url>
-cd PulseTrader
+sam build
+sam deploy --guided
 ```
 
-2. **Create virtual environment**
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+**Manual Deployment:**
+1. Create DynamoDB table (`PulseTraderSubscriptions`)
+2. Create SQS queue for price events
+3. Deploy Lambda functions & API Gateway routes
+4. Set environment variables:
+    - `SUB_TABLE` = DynamoDB table name
+    - `WS_MANAGEMENT_ENDPOINT` = API Gateway WebSocket management endpoint
+5. Grant IAM permissions for Lambda to access DynamoDB, SQS, and API Gateway Management API
+
+---
+
+## 🧪 Testing
+- Connect via WebSocket client to your API Gateway WebSocket URL.
+- Send:
+```json
+{ "action": "subscribe", "symbol": "AAPL" }
 ```
-
-3. **Install dependencies**
-```bash
-pip install -r requirements.txt
+- Publish a message to SQS:
+```json
+{ "symbol": "AAPL", "price": 189.45 }
 ```
+- Observe broadcast message received by subscribed client.
 
-4. **Start PostgreSQL**
-```bash
-docker-compose up -d
-```
+---
 
-5. **Set up environment variables**
-Create `.env` file:
-```
-DATABASE_URL=postgresql://trader:your_password@localhost:5432/trading_db
-ALPHA_VANTAGE_API_KEY=your_api_key_here
-AWS_REGION=us-east-2
-```
-
-6. **Run the application**
-```bash
-uvicorn app.main:app --reload
-```
-
-## Core Features
-
-- [ ] Real-time Stock Price Ingestion (via AWS Lambda + Alpha Vantage API)
-- [ ] WebSocket Streaming for sub-second market updates
-- [ ] Optimized PostgreSQL Time-Series Storage for historical data
-- [ ] Analytical SQL Queries with window functions & CTEs
-- [ ] Technical Indicator Calculations (EMA, RSI, Bollinger Bands, etc.)
-- [ ] Portfolio Backtesting Engine with multi-timeframe support
-- [ ] AWS ElastiCache Redis Caching for low-latency queries
-- [ ] Fully Serverless Event-Driven Microservices Architecture
-
-## API Endpoints
-
-REST API (AWS Lambda via API Gateway)
-- `POST /load-stock` - Health check
-- `GET /stocks` - List all tracked stocks
-- `GET /prices` - Get recent price data
-
-WebSocket (Real-time feed):
-- Connect to wss://<api-gateway-url>
-- Send: {"action": "subscribe", "symbol": "AAPL"}
-- Receive: {"symbol": "AAPL", "price": 215.32, "timestamp": "2025-08-12T14:35:00Z"}
-
-## Architecture Overview
-
-- **Data Ingestion**: Lambda functions fetch data from Alpha Vantage and push updates into RDS + Redis
-- **Real-time Feed**: API Gateway WebSockets broadcast updates to connected clients
-- **Data Processing**: Event-driven pipelines (via SQS) trigger analytical calculations
-- **Storage**: Optimized PostgreSQL schema with indexed time-series tables
-- **Caching**: Redis stores recent data for millisecond retrieval
-
-## Project Goals
-
-- Demonstrate AWS serverless architecture for real-time financial operations
-- Showcase event-driven microsfervices for low latency analytics
-- Build production-style cloud backend
-- Practice database optimization for time-series workloads
+## 📜 License
+MIT License
